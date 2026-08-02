@@ -16,9 +16,13 @@ from src.utils import (
 
 
 def evaluate():
+
     print("Loading model...")
 
     model, tokenizer = load_saved_model()
+
+    model.to(DEVICE)
+    model.eval()
 
     _, _, test_dataset, _, _ = get_datasets()
 
@@ -28,10 +32,8 @@ def evaluate():
         shuffle=False,
     )
 
-    model.eval()
-
     predictions = []
-    labels = []
+    true_labels = []
 
     with torch.no_grad():
 
@@ -39,42 +41,63 @@ def evaluate():
 
             input_ids = batch["input_ids"].to(DEVICE)
             attention_mask = batch["attention_mask"].to(DEVICE)
-            batch_labels = batch["labels"].to(DEVICE)
+            labels = batch["labels"].to(DEVICE)
 
             outputs = model(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
             )
 
-            preds = torch.argmax(outputs.logits, dim=1)
+            preds = torch.argmax(
+                outputs.logits,
+                dim=1,
+            )
 
-            predictions.extend(preds.cpu().numpy())
-            labels.extend(batch_labels.cpu().numpy())
+            predictions.extend(
+                preds.cpu().numpy()
+            )
 
-    metrics = compute_metrics(predictions, labels)
+            true_labels.extend(
+                labels.cpu().numpy()
+            )
+
+
+    metrics = compute_metrics(
+        predictions,
+        true_labels,
+    )
 
     print_metrics(metrics)
 
     save_metrics(metrics)
 
-    plot_confusion_matrix(labels, predictions)
+    plot_confusion_matrix(
+        true_labels,
+        predictions,
+    )
+
 
     prediction_df = pd.DataFrame(
         {
-            "True Label": labels,
+            "True Label": true_labels,
             "Predicted Label": predictions,
         }
     )
 
+
     prediction_df["True Label"] = prediction_df["True Label"].map(ID2LABEL)
+
     prediction_df["Predicted Label"] = prediction_df["Predicted Label"].map(ID2LABEL)
+
 
     prediction_df.to_csv(
         PREDICTIONS_FILE,
         index=False,
     )
 
-    print(f"\nMetrics saved to: {METRICS_FILE}")
+
+    print("\nEvaluation completed.")
+    print(f"Metrics saved to: {METRICS_FILE}")
     print(f"Predictions saved to: {PREDICTIONS_FILE}")
     print(f"Confusion matrix saved to: {CONFUSION_MATRIX}")
 

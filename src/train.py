@@ -61,10 +61,12 @@ scheduler = get_linear_schedule_with_warmup(
 training_losses = []
 validation_scores = []
 
-best_accuracy = 0.0
+best_accuracy = -1.0
 best_model = None
+best_metrics = None
 
 patience = 0
+
 
 def train_one_epoch():
     model.train()
@@ -121,9 +123,8 @@ def validate():
             predictions.extend(preds.cpu().numpy())
             labels_list.extend(labels.cpu().numpy())
 
-    metrics = compute_metrics(predictions, labels_list)
+    return compute_metrics(predictions, labels_list)
 
-    return metrics
 
 for epoch in range(NUM_EPOCHS):
 
@@ -144,6 +145,7 @@ for epoch in range(NUM_EPOCHS):
     if accuracy > best_accuracy:
 
         best_accuracy = accuracy
+        best_metrics = metrics.copy()
         patience = 0
 
         best_model = copy.deepcopy(model)
@@ -166,15 +168,9 @@ print("\nTraining completed.")
 plot_training_loss(training_losses)
 plot_validation_accuracy(validation_scores)
 
-save_metrics(metrics)
 
-print_metrics(metrics)
-
-best_metrics = None
-
-if accuracy > best_accuracy:
-    best_accuracy = accuracy
-    best_metrics = metrics
-    save_model(best_model, tokenizer)
-
-save_metrics(best_metrics)
+if best_metrics is not None:
+    save_metrics(best_metrics)
+    print_metrics(best_metrics)
+else:
+    print("No best metrics available.")

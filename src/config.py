@@ -25,10 +25,11 @@ FIGURE_DIR.mkdir(parents=True, exist_ok=True)
 
 # Model
 
-MODEL_NAME = "microsoft/deberta-v3-base"
+MODEL_NAME = "distilbert-base-uncased"
+#MODEL_NAME = "microsoft/deberta-v3-base"
 
 NUM_LABELS = 2
-MAX_LENGTH = 256
+MAX_LENGTH = 64
 
 # Training
 
@@ -42,7 +43,7 @@ WEIGHT_DECAY = 0.01
 
 NUM_EPOCHS = 3
 
-GRADIENT_ACCUMULATION = 2
+GRADIENT_ACCUMULATION = 1
 WARMUP_RATIO = 0.10
 
 EARLY_STOPPING_PATIENCE = 2

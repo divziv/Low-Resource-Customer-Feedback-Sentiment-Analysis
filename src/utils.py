@@ -48,10 +48,23 @@ def compute_metrics(predictions, labels):
 # Save metrics to file
 
 def save_metrics(metrics):
+    if metrics is None:
+        print("Warning: No metrics were available to save.")
+        return
+
+    if not isinstance(metrics, dict):
+        raise TypeError(
+            f"Expected metrics to be a dictionary, got {type(metrics).__name__}."
+        )
+
     with open(METRICS_FILE, "w") as file:
         for key, value in metrics.items():
-            file.write(f"{key}: {value:.4f}\n")
+            if isinstance(value, (int, float)):
+                file.write(f"{key}: {value:.4f}\n")
+            else:
+                file.write(f"{key}: {value}\n")
 
+    print(f"Metrics saved to: {METRICS_FILE}")
 
 # Plot confusion matrix
 
