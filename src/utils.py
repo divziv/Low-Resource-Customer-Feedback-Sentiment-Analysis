@@ -1,3 +1,4 @@
+
 import random
 import numpy as np
 import torch
@@ -6,36 +7,52 @@ import matplotlib.pyplot as plt
 
 from sklearn.metrics import (
     accuracy_score,
-    precision_recall_fscore_support,
-    confusion_matrix,
-    ConfusionMatrixDisplay,
+    precision_score,
+    recall_score,
+    f1_score,
 )
 
-from src.config import *
+from src.config import RANDOM_SEED
 
 
-# Set random seed
 
 def set_seed(seed=RANDOM_SEED):
+
     random.seed(seed)
     np.random.seed(seed)
+
     torch.manual_seed(seed)
 
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
 
-# Compute evaluation metrics
 
-def compute_metrics(predictions, labels):
-    accuracy = accuracy_score(labels, predictions)
+def compute_metrics(labels, predictions):
 
-    precision, recall, f1, _ = precision_recall_fscore_support(
+    accuracy = accuracy_score(
+        labels,
+        predictions
+    )
+
+    precision = precision_score(
         labels,
         predictions,
-        average="binary",
-        zero_division=0,
+        zero_division=0
     )
+
+    recall = recall_score(
+        labels,
+        predictions,
+        zero_division=0
+    )
+
+    f1 = f1_score(
+        labels,
+        predictions,
+        zero_division=0
+    )
+
 
     return {
         "accuracy": accuracy,
@@ -45,87 +62,110 @@ def compute_metrics(predictions, labels):
     }
 
 
-# Save metrics to file
 
-def save_metrics(metrics):
+
+def save_metrics(metrics, output_dir):
+
     if metrics is None:
-        print("Warning: No metrics were available to save.")
+        print("No metrics to save")
         return
 
-    if not isinstance(metrics, dict):
-        raise TypeError(
-            f"Expected metrics to be a dictionary, got {type(metrics).__name__}."
-        )
 
-    with open(METRICS_FILE, "w") as file:
-        for key, value in metrics.items():
-            if isinstance(value, (int, float)):
-                file.write(f"{key}: {value:.4f}\n")
-            else:
-                file.write(f"{key}: {value}\n")
-
-    print(f"Metrics saved to: {METRICS_FILE}")
-
-# Plot confusion matrix
-
-def plot_confusion_matrix(labels, predictions):
-    cm = confusion_matrix(labels, predictions)
-
-    disp = ConfusionMatrixDisplay(
-        confusion_matrix=cm,
-        display_labels=["Negative", "Positive"],
+    output_dir.mkdir(
+        parents=True,
+        exist_ok=True
     )
 
-    fig, ax = plt.subplots(figsize=(6, 6))
-    disp.plot(ax=ax, cmap="Blues", colorbar=False)
 
-    plt.title("Confusion Matrix")
-    plt.tight_layout()
-    plt.savefig(CONFUSION_MATRIX)
+    file_path = output_dir / "metrics.txt"
+
+
+    with open(file_path, "w") as file:
+
+        for key, value in metrics.items():
+
+            file.write(
+                f"{key}: {value:.4f}\n"
+            )
+
+
+    print(
+        f"Metrics saved to: {file_path}"
+    )
+
+
+
+
+def plot_training_loss(loss_history, figure_path):
+
+    plt.figure(figsize=(6,4))
+
+    plt.plot(
+        loss_history,
+        marker="o"
+    )
+
+    plt.title(
+        "Training Loss"
+    )
+
+    plt.xlabel(
+        "Epoch"
+    )
+
+    plt.ylabel(
+        "Loss"
+    )
+
+    plt.grid()
+
+    plt.savefig(
+        figure_path,
+        bbox_inches="tight"
+    )
+
     plt.close()
 
 
-# Plot training loss
 
-def plot_training_loss(losses):
-    plt.figure(figsize=(8, 5))
 
-    plt.plot(losses, marker="o")
+def plot_validation_accuracy(acc_history, figure_path):
 
-    plt.title("Training Loss")
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss")
+    plt.figure(figsize=(6,4))
 
-    plt.grid(True)
+    plt.plot(
+        acc_history,
+        marker="o"
+    )
 
-    plt.tight_layout()
-    plt.savefig(TRAINING_CURVE)
+    plt.title(
+        "Validation Accuracy"
+    )
+
+    plt.xlabel(
+        "Epoch"
+    )
+
+    plt.ylabel(
+        "Accuracy"
+    )
+
+    plt.grid()
+
+    plt.savefig(
+        figure_path,
+        bbox_inches="tight"
+    )
+
     plt.close()
-
-
-# Plot validation accuracy
-
-def plot_validation_accuracy(scores):
-    plt.figure(figsize=(8, 5))
-
-    plt.plot(scores, marker="o")
-
-    plt.title("Validation Accuracy")
-    plt.xlabel("Epoch")
-    plt.ylabel("Accuracy")
-
-    plt.grid(True)
-
-    plt.tight_layout()
-    plt.savefig(VALIDATION_CURVE)
-    plt.close()
-
-
-# Print metrics nicely
 
 def print_metrics(metrics):
+
     print("\nEvaluation Results")
     print("-" * 30)
 
     for key, value in metrics.items():
-        print(f"{key.capitalize():12}: {value:.4f}")
+
+        print(
+            f"{key.capitalize():12}: {value:.4f}"
+        )

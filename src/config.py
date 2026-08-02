@@ -3,28 +3,36 @@ from pathlib import Path
 import torch
 
 
-# Model
+# Models to train
 
-MODEL_NAME = "microsoft/deberta-v3-base"
+MODELS = [
+    "microsoft/deberta-v3-base",
+    "roberta-base",
+    "bert-base-uncased",
+    "google/electra-base-discriminator",
+    "microsoft/deberta-v3-small",
+    "microsoft/deberta-v3-large",
+    "microsoft/MiniLM-L12-H384-uncased",
+]
+
 
 NUM_LABELS = 2
 MAX_LENGTH = 256
 
 
-# Paths
+
+# Default model
+# Change this when running one model manually
+
+MODEL_NAME = MODELS[0]
+
+
+
+# Data paths
 
 PROJECT_ROOT = Path.cwd()
 
 DATA_DIR = PROJECT_ROOT / "data"
-
-MODEL_FOLDER_NAME = MODEL_NAME.replace("/", "_")
-
-OUTPUT_DIR = PROJECT_ROOT / "outputs" / MODEL_FOLDER_NAME
-
-MODEL_DIR = OUTPUT_DIR / "best_model"
-
-FIGURE_DIR = OUTPUT_DIR / "figures"
-
 
 TRAIN_FILE = DATA_DIR / "train.csv"
 VALID_FILE = DATA_DIR / "valid.csv"
@@ -32,11 +40,52 @@ TEST_FILE = DATA_DIR / "test.csv"
 UNLABELLED_FILE = DATA_DIR / "unlabelled.csv"
 
 
-# Create folders
 
-MODEL_DIR.mkdir(parents=True, exist_ok=True)
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-FIGURE_DIR.mkdir(parents=True, exist_ok=True)
+# Model folders
+
+def get_model_paths(model_name):
+
+    model_folder = model_name.replace("/", "_")
+
+    output_dir = (
+        PROJECT_ROOT
+        /
+        "outputs"
+        /
+        model_folder
+    )
+
+    model_dir = output_dir / "best_model"
+
+    figure_dir = output_dir / "figures"
+
+
+    output_dir.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    model_dir.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    figure_dir.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+
+    return output_dir, model_dir, figure_dir
+
+
+
+# Current model paths
+
+OUTPUT_DIR, MODEL_DIR, FIGURE_DIR = get_model_paths(
+    MODEL_NAME
+)
+
 
 
 # Training
@@ -44,69 +93,46 @@ FIGURE_DIR.mkdir(parents=True, exist_ok=True)
 RANDOM_SEED = 42
 
 
-# Batch sizes
-
 TRAIN_BATCH_SIZE = 4
+
 VALID_BATCH_SIZE = 16
 
-
-# Lower learning rate for DeBERTa stability
 
 LEARNING_RATE = 2e-5
 
 WEIGHT_DECAY = 0.01
 
 
-# Train longer with early stopping
-
 NUM_EPOCHS = 5
 
-
-# Gradient accumulation
 
 GRADIENT_ACCUMULATION = 2
 
 
-# Scheduler
-
 WARMUP_RATIO = 0.10
 
-
-# Stop if validation does not improve
 
 EARLY_STOPPING_PATIENCE = 2
 
 
-# Gradient clipping
-
 MAX_GRAD_NORM = 1.0
+
 
 
 # Device
 
 DEVICE = torch.device(
-    "cuda" if torch.cuda.is_available() else "cpu"
+    "cuda"
+    if torch.cuda.is_available()
+    else "cpu"
 )
 
 
-# Mixed precision training
+
+# Mixed precision
 
 FP16 = False
 
-
-# Output files
-
-MODEL_SAVE_PATH = MODEL_DIR
-
-METRICS_FILE = OUTPUT_DIR / "metrics.txt"
-
-PREDICTIONS_FILE = OUTPUT_DIR / "predictions.csv"
-
-CONFUSION_MATRIX = OUTPUT_DIR / "confusion_matrix.png"
-
-TRAINING_CURVE = OUTPUT_DIR / "training_loss.png"
-
-VALIDATION_CURVE = OUTPUT_DIR / "validation_accuracy.png"
 
 
 # Labels
@@ -121,3 +147,17 @@ ID2LABEL = {
     0: "negative",
     1: "positive",
 }
+
+
+
+# Output files
+
+METRICS_FILE = OUTPUT_DIR / "metrics.txt"
+
+PREDICTIONS_FILE = OUTPUT_DIR / "predictions.csv"
+
+CONFUSION_MATRIX = OUTPUT_DIR / "confusion_matrix.png"
+
+TRAINING_CURVE = OUTPUT_DIR / "training_loss.png"
+
+VALIDATION_CURVE = OUTPUT_DIR / "validation_accuracy.png"

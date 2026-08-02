@@ -1,106 +1,128 @@
-import pandas as pd
-import torch
 
+import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from src.config import *
-from src.dataset import get_datasets
-from src.model import load_saved_model
-from src.utils import (
-    compute_metrics,
-    plot_confusion_matrix,
-    save_metrics,
-    print_metrics,
+from src.config import (
+    MODELS,
+    get_model_paths,
+    VALID_BATCH_SIZE,
+    DEVICE,
 )
 
+from src.dataset import get_datasets
+from src.model import load_saved_model
+from src.utils import compute_metrics, print_metrics
 
-def evaluate():
 
-    print("Loading model...")
 
-    model, tokenizer = load_saved_model()
+def evaluate_model(model_name):
 
-    model.to(DEVICE)
-    model.eval()
+    print("Evaluating:", model_name)
 
-    _, _, test_dataset, _, _ = get_datasets()
+
+    output_dir, model_dir, figure_dir = get_model_paths(
+        model_name
+    )
+
+
+    # Load dataset with correct tokenizer
+
+    (
+        _,
+        _,
+        test_dataset,
+        _,
+        _
+    ) = get_datasets(
+        model_name
+    )
+
 
     test_loader = DataLoader(
         test_dataset,
         batch_size=VALID_BATCH_SIZE,
-        shuffle=False,
+        shuffle=False
     )
 
+
+    model, tokenizer = load_saved_model(
+        model_dir
+    )
+
+
+    model.eval()
+
+
     predictions = []
-    true_labels = []
+    labels = []
+
 
     with torch.no_grad():
 
         for batch in tqdm(test_loader):
 
             input_ids = batch["input_ids"].to(DEVICE)
+
             attention_mask = batch["attention_mask"].to(DEVICE)
-            labels = batch["labels"].to(DEVICE)
+
+            batch_labels = batch["labels"].to(DEVICE)
+
 
             outputs = model(
                 input_ids=input_ids,
-                attention_mask=attention_mask,
+                attention_mask=attention_mask
             )
+
 
             preds = torch.argmax(
                 outputs.logits,
-                dim=1,
+                dim=1
             )
+
 
             predictions.extend(
                 preds.cpu().numpy()
             )
 
-            true_labels.extend(
-                labels.cpu().numpy()
+
+            labels.extend(
+                batch_labels.cpu().numpy()
             )
 
 
     metrics = compute_metrics(
         predictions,
-        true_labels,
-    )
-
-    print_metrics(metrics)
-
-    save_metrics(metrics)
-
-    plot_confusion_matrix(
-        true_labels,
-        predictions,
+        labels
     )
 
 
-    prediction_df = pd.DataFrame(
-        {
-            "True Label": true_labels,
-            "Predicted Label": predictions,
-        }
+    print_metrics(
+        metrics
     )
 
 
-    prediction_df["True Label"] = prediction_df["True Label"].map(ID2LABEL)
+    with open(
+        output_dir / "test_metrics.txt",
+        "w"
+    ) as file:
 
-    prediction_df["Predicted Label"] = prediction_df["Predicted Label"].map(ID2LABEL)
+        for key, value in metrics.items():
+
+            file.write(
+                f"{key}: {value:.4f}\n"
+            )
 
 
-    prediction_df.to_csv(
-        PREDICTIONS_FILE,
-        index=False,
+    print(
+        "Saved:",
+        output_dir / "test_metrics.txt"
     )
 
 
-    print("\nEvaluation completed.")
-    print(f"Metrics saved to: {METRICS_FILE}")
-    print(f"Predictions saved to: {PREDICTIONS_FILE}")
-    print(f"Confusion matrix saved to: {CONFUSION_MATRIX}")
 
+for model_name in MODELS:
 
-if __name__ == "__main__":
-    evaluate()
+    evaluate_model(
+        model_name
+    )

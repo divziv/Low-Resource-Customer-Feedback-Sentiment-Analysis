@@ -7,9 +7,7 @@ from transformers import (
 )
 
 from src.config import (
-    MODEL_NAME,
     NUM_LABELS,
-    MODEL_DIR,
     DEVICE,
     LABEL2ID,
     ID2LABEL,
@@ -17,28 +15,38 @@ from src.config import (
 
 
 
-def load_model():
+def load_model(model_name):
 
     tokenizer = AutoTokenizer.from_pretrained(
-        MODEL_NAME
+        model_name
     )
 
+
     model = AutoModelForSequenceClassification.from_pretrained(
-        MODEL_NAME,
+        model_name,
         num_labels=NUM_LABELS,
         label2id=LABEL2ID,
         id2label=ID2LABEL,
+        attn_implementation="eager",
     )
 
-    # Always train in FP32 for stability
+
+    # Train using FP32
     model = model.float()
 
     model.to(DEVICE)
 
+
     print(
-        "Base model dtype:",
+        "Loaded model:",
+        model_name
+    )
+
+    print(
+        "Model dtype:",
         next(model.parameters()).dtype
     )
+
 
     return model, tokenizer
 
@@ -46,57 +54,66 @@ def load_model():
 
 
 
-def save_model(model, tokenizer):
+def save_model(
+    model,
+    tokenizer,
+    model_dir
+):
 
-    MODEL_DIR.mkdir(
+    model_dir.mkdir(
         parents=True,
         exist_ok=True
     )
 
+
     model.save_pretrained(
-        MODEL_DIR
+        model_dir
     )
+
 
     tokenizer.save_pretrained(
-        MODEL_DIR
+        model_dir
     )
+
 
     print(
-        f"Model saved to: {MODEL_DIR}"
+        f"Model saved to: {model_dir}"
     )
 
 
 
 
 
-def load_saved_model():
 
-    """
-    Load the fine-tuned model from outputs/best_model
-    for evaluation or inference.
-    """
+def load_saved_model(model_dir):
 
     tokenizer = AutoTokenizer.from_pretrained(
-        MODEL_DIR
+        model_dir
     )
 
 
     model = AutoModelForSequenceClassification.from_pretrained(
-        MODEL_DIR,
+        model_dir,
         num_labels=NUM_LABELS,
         label2id=LABEL2ID,
         id2label=ID2LABEL,
+        attn_implementation="eager",
     )
 
 
-    # Ensure FP32 evaluation
     model = model.float()
 
     model.to(DEVICE)
 
 
     print(
-        "Loaded saved model dtype:",
+        "Loaded saved model:",
+        model_dir
+    )
+
+
+    print(
+        "Model dtype:",
         next(model.parameters()).dtype
     )
 
