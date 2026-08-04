@@ -1,9 +1,5 @@
 # Low-Resource Customer Feedback Sentiment Analysis
 
-**Technical Task Submission for the Sakshya Project**
-
-**Author:** <Your Name>
-
 ---
 
 # Project Overview
